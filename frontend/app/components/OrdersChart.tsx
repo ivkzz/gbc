@@ -17,16 +17,25 @@ interface Order {
   total: number | string
 }
 
+// Единый интерфейс для точки данных на графике
+interface ChartPoint {
+  label: string
+  total: number
+  count: number
+  fullLabel: string
+  key?: string | number
+}
+
 type Period = '24h' | '7d' | '30d' | 'all'
 
 export default function OrdersChart({ data }: { data: Order[] }) {
   const [period, setPeriod] = useState<Period>('all')
 
-  const chartData = useMemo(() => {
+  const chartData = useMemo<ChartPoint[]>(() => {
     const sorted = [...data].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     const now = new Date()
 
-    // СПЕЦИАЛЬНЫЙ РЕЖИМ для "Все время" - возвращаем ту самую любимую кривую
+    // СПЕЦИАЛЬНЫЙ РЕЖИМ для "Все время"
     if (period === 'all') {
       return sorted.map((o, i) => {
         const d = new Date(o.created_at)
@@ -35,17 +44,15 @@ export default function OrdersChart({ data }: { data: Order[] }) {
           total: Number(o.total || 0),
           count: 1,
           fullLabel: d.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }),
-          idx: i // Для уникальности ключа в Recharts
+          key: `all-${i}`
         }
       })
     }
 
     // Для остальных табов делаем фиксированную сетку (День / Неделя / Месяц)
-    const result = []
     const dailyMap: { [key: string]: { total: number, count: number } } = {}
 
     if (period === '24h') {
-      // Генерируем последние 24 часа
       for (let i = 23; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 60 * 60 * 1000)
         const key = `${d.toLocaleDateString('en-CA')} ${d.getHours()}:00`
@@ -65,7 +72,8 @@ export default function OrdersChart({ data }: { data: Order[] }) {
         label: key.split(' ')[1],
         total: val.total,
         count: val.count,
-        fullLabel: key
+        fullLabel: key,
+        key: key
       }))
     }
 
@@ -92,12 +100,13 @@ export default function OrdersChart({ data }: { data: Order[] }) {
           label: d.toLocaleString('ru-RU', { day: 'numeric', month: 'short' }),
           total: val.total,
           count: val.count,
-          fullLabel: d.toLocaleString('ru-RU', { day: 'numeric', month: 'long' })
+          fullLabel: d.toLocaleString('ru-RU', { day: 'numeric', month: 'long' }),
+          key: key
         }
       })
     }
 
-    return sorted
+    return []
   }, [data, period])
 
   return (
@@ -147,7 +156,7 @@ export default function OrdersChart({ data }: { data: Order[] }) {
               cursor={{ stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '4 4' }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const item = payload[0].payload;
+                  const item = payload[0].payload as ChartPoint;
                   return (
                     <div className="bg-background/95 backdrop-blur-xl p-3 border border-border/50 rounded-xl shadow-2xl min-w-[200px] ring-1 ring-white/5">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 border-b border-border/30 pb-1.5 font-mono">
