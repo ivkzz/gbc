@@ -3,7 +3,7 @@
 .env.*
 !.env.example
 
-./backend/logs
+logs
 
 # Python
 backend/venv/
