@@ -26,7 +26,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 def fetch_and_sync():
     logger.info("Запрашиваем заказы из RetailCRM...")
     # Забираем первую страницу заказов, лимит 100 для примера (в проде нужна пагинация)
-    response = rc_client.orders(limit=100)
+    response = rc_client.orders(filters={}, limit=100)
     
     if not response.is_successful():
         logger.error(f"Ошибка получения заказов: {response.get_error_msg()}")

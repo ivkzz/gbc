@@ -10,9 +10,9 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-export default function OrdersChart({ data }: { data: any[] }) {
+export default function OrdersChart({ data }: { data: { created_at: string, total: number | string }[] }) {
   // Простая агрегация данных по датам (предполагаем формат YYYY-MM-DD для простоты)
-  const chartDataMap = data.reduce((acc: any, order) => {
+  const chartDataMap = data.reduce((acc: Record<string, { date: string, sum: number, count: number }>, order) => {
     // В реальном проекте используем date-fns или dayjs
     const date = new Date(order.created_at).toLocaleDateString('ru-RU')
     if (!acc[date]) {
@@ -39,6 +39,7 @@ export default function OrdersChart({ data }: { data: any[] }) {
             tickFormatter={(value) => `${value} ₸`}
           />
           <Tooltip 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any) => [`${value} ₸`, 'Сумма']} 
             labelStyle={{ color: 'black' }} 
           />

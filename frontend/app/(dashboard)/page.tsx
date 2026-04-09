@@ -1,10 +1,10 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import OrdersChart from '@/components/OrdersChart'
-import { logout } from './login/actions'
+import { logout } from '@/(auth)/login/actions'
 import { Button } from '@/components/ui/button'
 
 export const revalidate = 0 // Опционально, чтобы Next.js не кэшировал данные статической страницей
@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const { data: userData } = await supabase.auth.getUser()
 
   // Получаем последние заказы (с сортировкой по новизне)
-  const { data: orders, error } = await supabase
+  const { data: orders } = await supabase
     .from('orders')
     .select('*')
     .order('created_at', { ascending: false })

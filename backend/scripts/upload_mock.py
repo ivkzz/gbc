@@ -27,11 +27,9 @@ def upload_mocks(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    success_count = 0
+    # Формируем все заказы в нужный формат
+    batch_orders = []
     for order in data:
-        # Приводим к формату API RetailCRM
-        # https://docs.retailcrm.ru/Developers/API/APIv5/Orders/ordersCreate
-        # В мок дате есть firstName, lastName, phone, email, orderMethod, orderType, items, delivery -> address
         formatted_order = {
             "firstName": order.get("firstName"),
             "lastName": order.get("lastName"),
@@ -49,30 +47,36 @@ def upload_mocks(file_path):
             }
         }
         
-        # Обработка товаров
         for item in order.get("items", []):
             formatted_order["items"].append({
-                # В RetailCRM для создания товара в заказе обязательно нужен productId или offerId 
-                # (если товара нет в CRM, то может не дать создать, однако можно передать productName вместо привязки если настройки CRM позволяют)
                 "productName": item.get("productName"),
                 "initialPrice": item.get("initialPrice"),
                 "quantity": item.get("quantity", 1),
             })
             
+        batch_orders.append(formatted_order)
+
+    # В RetailCRM можно отправлять до 50 заказов пакетом за 1 запрос
+    # Поскольку у нас ровно 50 (или около того), мы можем отправить их одним махом.
+    # Если бы было больше, мы бы разбили их на чанки по 50:
+    for i in range(0, len(batch_orders), 50):
+        chunk = batch_orders[i:i+50]
         try:
-            # Создаем заказ (site=None означает дефолтный сайт)
-            response = client.orders_create(formatted_order)
+            logger.info(f"Отправка пакета из {len(chunk)} заказов...")
+            response = client.orders_upload(chunk)
+            
             if response.is_successful():
-                logger.info(f"Заказ успешно создан, ID: {response.get_response().get('id')}")
-                success_count += 1
+                # Возвращает {"success": True, "uploadedOrders": [...]}
+                uploaded = response.get_response().get("uploadedOrders", [])
+                logger.info(f"Успешно создано {len(uploaded)} заказов в этом пакете!")
             else:
-                logger.error(f"Ошибка при создании заказа: {response.get_error_msg()}")
+                logger.error(f"Ошибка при пакетной загрузке: {response.get_error_msg()}")
                 if response.get_errors():
                     logger.error(f"Детали ошибки: {response.get_errors()}")
         except Exception as e:
-            logger.error(f"Исключение при вызове API: {e}")
+            logger.error(f"Исключение при вызове пакетного API: {e}")
 
-    logger.info(f"Загрузка завершена. Успешно: {success_count}/{len(data)}")
+    logger.info("Процесс загрузки завершен!")
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
