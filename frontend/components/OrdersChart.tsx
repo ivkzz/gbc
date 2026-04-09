@@ -39,7 +39,7 @@ export default function OrdersChart({ data }: { data: any[] }) {
             tickFormatter={(value) => `${value} ₸`}
           />
           <Tooltip 
-            formatter={(value: number) => [`${value} ₸`, 'Сумма']} 
+            formatter={(value: any) => [`${value} ₸`, 'Сумма']} 
             labelStyle={{ color: 'black' }} 
           />
           <Line
