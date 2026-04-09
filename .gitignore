@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 
+./backend/logs
+
 # Python
 backend/venv/
 backend/__pycache__/

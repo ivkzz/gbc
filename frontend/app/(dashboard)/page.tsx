@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import OrdersChart from '@/components/OrdersChart'
 import { DashboardHeader } from '@/components/DashboardHeader'
+import { RealtimeOrders } from '@/components/RealtimeOrders'
 
 export const revalidate = 0 // Опционально, чтобы Next.js не кэшировал данные статической страницей
 
@@ -27,6 +28,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col bg-background/95">
+      <RealtimeOrders />
       {/* Декоративный фон для глубины интерфейса */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full bg-primary/[0.03] blur-[100px]" />

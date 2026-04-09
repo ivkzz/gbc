@@ -6,7 +6,7 @@ from loguru import logger
 
 from app.core.deps import limiter
 from app.schemas.webhook import WebhookResponse
-from app.api.v1.routers import webhooks
+from app.api.v1.routers import webhooks, orders
 
 # Logger configuration
 logger.add("logs/app.log", rotation="500 MB", level="INFO")
@@ -30,6 +30,7 @@ app.add_middleware(
 )
 
 app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"])
+app.include_router(orders.router, prefix="/api/v1/orders", tags=["Orders"])
 
 @app.get("/", response_model=WebhookResponse, status_code=status.HTTP_200_OK)
 @limiter.limit("10/minute")

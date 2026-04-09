@@ -2,16 +2,19 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 class OrderItem(BaseModel):
+    productName: Optional[str] = ""
     initialPrice: float = 0.0
     quantity: int = 1
     model_config = ConfigDict(extra="ignore")
 
 class OrderData(BaseModel):
-    id: int
+    id: Optional[int] = None
     firstName: Optional[str] = ""
     lastName: Optional[str] = ""
     phone: Optional[str] = ""
     email: Optional[str] = ""
+    orderType: Optional[str] = "eshop-individual"
+    orderMethod: Optional[str] = "shopping-cart"
     status: Optional[str] = "new"
     totalSumm: Optional[float] = None
     items: List[OrderItem] = Field(default_factory=list)
