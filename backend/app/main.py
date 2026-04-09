@@ -22,6 +22,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# [DIAGNOSTIC] Log every request to stdout for Vercel
+print("--- [BOOT] FastAPI application starting up ---")
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"--- [REQUEST] {request.method} {request.url.path} ---")
+    response = await call_next(request)
+    print(f"--- [RESPONSE] {request.method} {request.url.path} | Status: {response.status_code} ---")
+    return response
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 

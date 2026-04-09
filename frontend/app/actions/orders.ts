@@ -91,10 +91,12 @@ export async function createRandomOrder() {
       revalidatePath('/')
       return { success: true }
     } catch (fetchError: any) {
-      console.error(`[Action] Fetch error:`, fetchError)
+      console.error(`[Action] Detailed fetch error:`, fetchError)
+      // Выводим реальную причину ошибки для диагностики
+      const detailedError = fetchError.cause?.message || fetchError.message || 'Unknown network error'
       return { 
         success: false, 
-        error: `Could not connect to backend. Verify BACKEND_API_URL in Vercel settings.` 
+        error: `Connection failed: ${detailedError}. URL: ${finalUrl}` 
       }
     }
   } catch (outerError: any) {
