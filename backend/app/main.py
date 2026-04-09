@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
@@ -9,7 +10,11 @@ from app.schemas.webhook import WebhookResponse
 from app.api.v1.routers import webhooks, orders
 
 # Logger configuration
-logger.add("logs/app.log", rotation="500 MB", level="INFO")
+# На Vercel файловая система read-only, поэтому пишем в файл только локально
+if not os.environ.get("VERCEL"):
+    logger.add("logs/app.log", rotation="500 MB", level="INFO")
+else:
+    logger.info("Running on Vercel, file logging disabled")
 
 app = FastAPI(
     title="RetailCRM Webhook Listener API",

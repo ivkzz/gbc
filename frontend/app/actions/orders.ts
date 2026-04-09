@@ -57,27 +57,48 @@ export async function createRandomOrder() {
 
     // Отправляем на бэкенд (FastAPI)
     // В Vercel обязательно установите переменную BACKEND_API_URL
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000'
-    console.log(`Sending to backend: ${backendUrl}/api/v1/orders/create`)
-
-    const response = await fetch(`${backendUrl}/api/v1/orders/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData)
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: response.statusText }))
-      console.error('Backend error:', errorData)
-      return { success: false, error: errorData.detail || 'Failed to create order via backend' }
+    let backendUrl = (process.env.BACKEND_API_URL || 'http://localhost:8000').trim()
+    
+    // Убираем слеш в конце, если он есть, чтобы избежать двойных слешей
+    if (backendUrl.endsWith('/')) {
+      backendUrl = backendUrl.slice(0, -1)
     }
 
-    revalidatePath('/')
-    return { success: true }
-  } catch (error: any) {
-    console.error('Action error:', error)
-    return { success: false, error: error.message }
+    const finalUrl = `${backendUrl}/api/v1/orders/create`
+    console.log(`[Action] Attempting request to: ${finalUrl}`)
+
+    try {
+      const response = await fetch(finalUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+        cache: 'no-store'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }))
+        console.error(`[Action] Backend returned ${response.status}:`, errorData)
+        return { 
+          success: false, 
+          error: `Backend Error (${response.status}): ${errorData.detail || 'Unknown error'}` 
+        }
+      }
+
+      console.log(`[Action] Order created successfully via ${finalUrl}`)
+      revalidatePath('/')
+      return { success: true }
+    } catch (fetchError: any) {
+      console.error(`[Action] Fetch error:`, fetchError)
+      return { 
+        success: false, 
+        error: `Could not connect to backend. Verify BACKEND_API_URL in Vercel settings.` 
+      }
+    }
+  } catch (outerError: any) {
+    console.error('Outer Action error:', outerError)
+    return { success: false, error: outerError.message }
   }
 }
