@@ -14,10 +14,9 @@ async def retailcrm_webhook(
     background_tasks: BackgroundTasks,
     supabase_repo: SupabaseRepoDep
 ):
-    """
-    Эндпоинт для вебхуков от RetailCRM.
-    Обрабатываем формально x-www-form-urlencoded или json.
-    """
+    # Самый первый лог - без условий и парсинга
+    print(f"!!! [WEBHOOK_ENTRY] Request received FROM: {request.client.host if request.client else 'Unknown'} !!!")
+    
     try:
         content_type = request.headers.get("content-type", "")
         if "application/json" in content_type:
