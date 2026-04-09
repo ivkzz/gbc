@@ -29,5 +29,6 @@ export async function logout() {
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
   await supabase.auth.signOut()
+  revalidatePath('/', 'layout')
   redirect('/login')
 }

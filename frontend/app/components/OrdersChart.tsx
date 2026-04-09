@@ -1,8 +1,8 @@
 'use client'
 
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -11,47 +11,90 @@ import {
 } from 'recharts'
 
 export default function OrdersChart({ data }: { data: { created_at: string, total: number | string }[] }) {
-  // Простая агрегация данных по датам (предполагаем формат YYYY-MM-DD для простоты)
-  const chartDataMap = data.reduce((acc: Record<string, { date: string, sum: number, count: number }>, order) => {
-    // В реальном проекте используем date-fns или dayjs
-    const date = new Date(order.created_at).toLocaleDateString('ru-RU')
-    if (!acc[date]) {
-      acc[date] = { date, sum: 0, count: 0 }
-    }
-    acc[date].sum += Number(order.total || 0)
-    acc[date].count += 1
-    return acc
-  }, {})
+  // Сортируем данные хронологически
+  const sortedData = [...data].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
-  const chartData = Object.values(chartDataMap)
+  // Переходим на метки времени (timestamp), чтобы каждая точка была уникальной
+  const chartData = sortedData.map((order, index) => {
+    const d = new Date(order.created_at);
+    return {
+      // Используем время в мс + индекс для гарантии уникальности, даже если время совпадает
+      time: d.getTime() + index,
+      displayDate: d.toLocaleString('ru-RU', { day: 'numeric', month: 'short' }),
+      fullDate: d.toLocaleString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      sum: Number(order.total || 0),
+    };
+  })
 
   return (
-    <div className="h-[350px] w-full mt-4">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 5, right: 10, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-          <YAxis
-            stroke="#888888"
+    <div className="h-[350px] w-full min-w-0 mt-4">
+      <ResponsiveContainer width="100%" height={350}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorSum" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis
+            dataKey="time"
+            type="number"
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={(ts) => new Date(ts).toLocaleString('ru-RU', { day: 'numeric', month: 'short' })}
+            stroke="#94a3b8"
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value) => `${value} ₸`}
+            minTickGap={50}
+            tick={{ fill: '#64748b' }}
           />
-          <Tooltip 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any) => [`${value} ₸`, 'Сумма']} 
-            labelStyle={{ color: 'black' }} 
+          <YAxis
+            stroke="#94a3b8"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => `${value.toLocaleString()} ₸`}
+            tick={{ fill: '#64748b' }}
           />
-          <Line
+          <Tooltip
+            cursor={{ stroke: '#2563eb', strokeWidth: 1 }}
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                const item = payload[0].payload;
+                return (
+                  <div className="bg-white p-3 border rounded-lg shadow-xl ring-1 ring-black/5 min-w-[200px]">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 border-b pb-1">
+                      {item.fullDate}
+                    </p>
+                    <div className="flex items-center justify-between gap-4 mt-2">
+                      <span className="text-sm text-slate-600">Сумма заказа:</span>
+                      <span className="text-lg font-black text-blue-600">
+                        {item.sum.toLocaleString()} ₸
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Area
             type="monotone"
             dataKey="sum"
             stroke="#2563eb"
             strokeWidth={3}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
+            fillOpacity={1}
+            fill="url(#colorSum)"
+            animationDuration={1000}
+            activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2 }}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   )

@@ -4,8 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import OrdersChart from '@/components/OrdersChart'
-import { logout } from '@/(auth)/login/actions'
-import { Button } from '@/components/ui/button'
+import { DashboardHeader } from '@/components/DashboardHeader'
 
 export const revalidate = 0 // Опционально, чтобы Next.js не кэшировал данные статической страницей
 
@@ -27,16 +26,16 @@ export default async function DashboardPage() {
   const totalOrders = orders?.length || 0
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <header className="flex h-16 items-center gap-4 border-b bg-background px-6 justify-between">
-        <div className="flex font-semibold tracking-tight">RetailCRM &rarr; Supabase Dashboard</div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{userData?.user?.email}</span>
-          <form action={logout}>
-            <Button variant="outline" size="sm">Выйти</Button>
-          </form>
-        </div>
-      </header>
+    <div className="relative flex min-h-screen w-full flex-col bg-background/95">
+      {/* Декоративный фон для глубины интерфейса */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full bg-primary/[0.03] blur-[100px]" />
+        <div className="absolute bottom-0 left-0 h-[400px] w-[400px] rounded-full bg-primary/[0.02] blur-[80px]" />
+      </div>
+
+      <div className="relative z-10 flex flex-col w-full">
+        <DashboardHeader email={userData?.user?.email} />
+
 
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -64,7 +63,7 @@ export default async function DashboardPage() {
           <Card className="lg:col-span-4">
             <CardHeader>
               <CardTitle>Динамика заказов</CardTitle>
-              <CardDescription>Сумма выручки по дням</CardDescription>
+              <CardDescription>История сумм по заказам</CardDescription>
             </CardHeader>
             <CardContent>
               <OrdersChart data={orders || []} />
@@ -110,6 +109,7 @@ export default async function DashboardPage() {
           </Card>
         </div>
       </main>
+      </div>
     </div>
   )
 }
