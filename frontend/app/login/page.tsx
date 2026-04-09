@@ -1,5 +1,5 @@
 import { login } from './actions'
-import { Button } from '@/components/ui/button'
+import { SubmitButton } from './submit-button'
 
 export default async function LoginPage({
   searchParams,
@@ -47,9 +47,7 @@ export default async function LoginPage({
             </p>
           )}
 
-          <Button type="submit" className="w-full mt-2">
-            Войти
-          </Button>
+          <SubmitButton />
         </form>
       </div>
     </div>
