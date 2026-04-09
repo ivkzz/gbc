@@ -18,38 +18,47 @@ async def retailcrm_webhook(
     print(f"!!! [WEBHOOK_ENTRY] Request received FROM: {request.client.host if request.client else 'Unknown'} !!!")
     
     try:
-        content_type = request.headers.get("content-type", "")
-        if "application/json" in content_type:
-            payload = await request.json()
-        else:
+        # Пытаемся прочитать как JSON в любом случае, так как триггеры CRM могут слать разный Content-Type
+        body = await request.body()
+        try:
+            payload = json.loads(body)
+            print(f"--- [WEBHOOK] Parsed JSON payload: {payload} ---")
+        except:
+            # Если не JSON, пробуем как форму
             form_data = await request.form()
             if "order" in form_data:
                 payload = {"order": json.loads(str(form_data["order"]))}
             else:
                 payload = dict(form_data)
+            print(f"--- [WEBHOOK] Parsed Form payload: {payload} ---")
         
-        print(f"--- [WEBHOOK] Received data from RetailCRM. Content-Type: {content_type} ---")
-        # logger.debug("Received webhook payload")
     except Exception as e:
         print(f"--- [WEBHOOK_ERROR] Failed to parse payload: {e} ---")
         logger.error(f"Error parsing webhook request: {e}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload format")
 
-    order_raw = payload.get("order") if "order" in payload else payload
-    print(f"--- [WEBHOOK] Processing order data for: {order_raw.get('firstName', 'Unknown')} {order_raw.get('lastName', 'User')} ---")
+    # Если данные пришли плоским списком (как в вашем триггере), или через 'order'
+    order_raw = payload.get("order") if isinstance(payload, dict) and "order" in payload else payload
+    
+    # Гарантируем, что ID есть в данных
+    if not order_raw.get("id"):
+        # Иногда ID может быть в самом payload, если он плоский
+        order_raw["id"] = payload.get("id")
+
+    print(f"--- [WEBHOOK] Processing Order Data: {order_raw} ---")
     
     try:
         order_data = OrderData(**order_raw)
-        print(f"--- [WEBHOOK] Data validated for Order ID: {order_data.id} ---")
+        print(f"--- [WEBHOOK] Pydantic Validated. ID: {order_data.id}, Total: {order_data.calculated_total} ---")
     except Exception as e:
-        print(f"--- [WEBHOOK_ERROR] Validation failed: {e} ---")
+        print(f"--- [WEBHOOK_ERROR] Pydantic Validation Failed: {e} ---")
         logger.error(f"Validation error for webhook data: {e}")
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid order schema")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Schema mismatch: {e}")
 
     total = order_data.calculated_total
-
-    # На Vercel выполняем задачи ДО возврата ответа, чтобы процесс не был убит.
-    # save_order - синхронная функция, вызываем напрямую.
+    
+    # Сохраняем в Supabase
+    print(f"--- [WEBHOOK] Saving to Supabase... ID: {order_data.id} ---")
     supabase_repo.save_order(order_data, total)
 
     # send_telegram_alert - асинхронная, используем await.
