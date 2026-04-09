@@ -58,11 +58,14 @@ async def retailcrm_webhook(
     total = order_data.calculated_total
     
     # Сохраняем в Supabase
-    print(f"--- [WEBHOOK] Saving to Supabase... ID: {order_data.id} ---")
+    print(f"--- [WEBHOOK] Saving to Supabase... ID: {order_data.id}, Calculated Total: {total} ---")
     supabase_repo.save_order(order_data, total)
 
-    # send_telegram_alert - асинхронная, используем await.
+    # Отправляем уведомление в Telegram только для крупных заказов
     if total > 50000:
+        print(f"--- [WEBHOOK] Target sum reached ({total} > 50000). Sending Telegram alert... ---")
         await NotificationService.send_telegram_alert(order_data, total)
+    else:
+        print(f"--- [WEBHOOK] Target sum NOT reached ({total} < 50000). Alert skipped. ---")
 
     return {"status": "ok", "message": "Webhook processed successfully"}
